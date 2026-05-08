@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chase the Sausage! — Game Design Document</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --mustard:   #f2a71b;
+      --mustard-d: #d4870a;
+      --red:       #e03b2f;
+      --cream:     #fdf6e3;
+      --brown:     #5c2e00;
+      --brown-l:   #7a4010;
+      --tan:       #f5deb3;
+      --tan-d:     #e8c98a;
+      --green:     #4caf50;
+      --card-bg:   #fffdf5;
+      --card-br:   #e8d5a0;
+      --text:      #3a2000;
+      --text-soft: #7a5c30;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: var(--cream);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* custom cursor - paw */
+    body { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='24'%3E🐾%3C/text%3E%3C/svg%3E") 12 12, auto; }
+
+    /* ===== HEADER ===== */
+    header {
+      background: var(--mustard);
+      background-image:
+        radial-gradient(circle at 15% 20%, rgba(255,255,255,0.15) 0%, transparent 40%),
+        radial-gradient(circle at 85% 80%, rgba(200,100,0,0.2) 0%, transparent 40%);
+      padding: 70px 20px 50px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      border-bottom: 5px solid var(--brown);
+    }
+
+    /* polka dot pattern */
+    header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.18) 4px, transparent 4px);
+      background-size: 40px 40px;
+      pointer-events: none;
+    }
+
+    /* bouncing background emojis */
+    .bg-emoji {
+      position: absolute;
+      font-size: 48px;
+      opacity: 0.18;
+      pointer-events: none;
+      animation: bobble 4s ease-in-out infinite;
+    }
+    .bg-emoji:nth-child(2)  { top: 8%;  left: 4%;  animation-delay: 0s;   font-size: 36px; }
+    .bg-emoji:nth-child(3)  { top: 70%; left: 88%; animation-delay: 1s;   font-size: 60px; }
+    .bg-emoji:nth-child(4)  { top: 55%; left: 6%;  animation-delay: 2s;   font-size: 40px; }
+    .bg-emoji:nth-child(5)  { top: 15%; left: 80%; animation-delay: 0.5s; font-size: 50px; }
+    .bg-emoji:nth-child(6)  { top: 80%; left: 40%; animation-delay: 1.5s; font-size: 30px; }
+    .bg-emoji:nth-child(7)  { top: 35%; left: 92%; animation-delay: 3s;   font-size: 42px; }
+
+    @keyframes bobble {
+      0%, 100% { transform: translateY(0) rotate(-5deg); }
+      50%       { transform: translateY(-14px) rotate(5deg); }
+    }
+
+    .genre-badge {
+      display: inline-block;
+      background: var(--brown);
+      color: var(--mustard);
+      font-size: 11px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      font-weight: 800;
+      padding: 5px 18px;
+      border-radius: 30px;
+      margin-bottom: 18px;
+    }
+
+    header h1 {
+      font-family: 'Lilita One', cursive;
+      font-size: clamp(52px, 12vw, 110px);
+      color: var(--brown);
+      line-height: 1;
+      text-shadow: 4px 4px 0 rgba(0,0,0,0.15);
+      margin-bottom: 6px;
+      position: relative;
+    }
+
+    /* wiggle on hover */
+    header h1:hover { animation: wiggle 0.5s ease; }
+    @keyframes wiggle {
+      0%,100% { transform: rotate(0); }
+      20%  { transform: rotate(-3deg); }
+      60%  { transform: rotate(3deg); }
+    }
+
+    .dog-row {
+      font-size: 42px;
+      margin: 10px 0;
+      animation: runDog 6s linear infinite;
+      display: block;
+      white-space: nowrap;
+    }
+
+    @keyframes runDog {
+      0%   { transform: translateX(-120px); }
+      100% { transform: translateX(calc(100vw + 120px)); }
+    }
+
+    .header-subtitle {
+      font-size: 1rem;
+      color: var(--brown-l);
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .meta-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 22px;
+    }
+
+    .meta-chip {
+      background: var(--brown);
+      border-radius: 10px;
+      padding: 10px 18px;
+      font-size: 13px;
+      color: var(--cream);
+      font-weight: 600;
+    }
+    .meta-chip strong {
+      display: block;
+      font-size: 9px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--mustard);
+      margin-bottom: 2px;
+    }
+
+    /* ===== NAV ===== */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      background: var(--brown);
+      border-bottom: 3px solid var(--mustard-d);
+      display: flex;
+      overflow-x: auto;
+      padding: 0 12px;
+    }
+    nav a {
+      color: var(--tan);
+      text-decoration: none;
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      font-weight: 700;
+      padding: 14px 14px;
+      white-space: nowrap;
+      border-bottom: 3px solid transparent;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    nav a:hover {
+      color: var(--mustard);
+      border-bottom-color: var(--mustard);
+    }
+
+    /* ===== MAIN ===== */
+    main {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 50px 20px 100px;
+    }
+
+    /* ===== CARDS ===== */
+    .card {
+      background: var(--card-bg);
+      border: 2px solid var(--card-br);
+      border-radius: 20px;
+      padding: 32px 36px;
+      margin-bottom: 26px;
+      position: relative;
+      box-shadow: 4px 4px 0 var(--tan-d);
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.55s ease, transform 0.55s ease;
+    }
+    .card.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* section emoji stamp */
+    .card::after {
+      content: attr(data-emoji);
+      position: absolute;
+      top: 18px;
+      right: 22px;
+      font-size: 36px;
+      opacity: 0.18;
+      pointer-events: none;
+    }
+
+    .card h2 {
+      font-family: 'Lilita One', cursive;
+      font-size: 22px;
+      color: var(--brown);
+      margin-bottom: 18px;
+      padding-bottom: 12px;
+      border-bottom: 2px dashed var(--tan-d);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sec-num {
+      background: var(--mustard);
+      color: var(--brown);
+      font-family: 'Nunito', sans-serif;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+
+    .card p {
+      color: var(--text-soft);
+      font-size: 15px;
+      line-height: 1.8;
+      margin-bottom: 12px;
+    }
+    .card p:last-child { margin-bottom: 0; }
+
+    /* Info grid */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .info-box {
+      background: var(--tan);
+      border: 1px solid var(--tan-d);
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+    .info-box .label {
+      font-size: 9px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--brown-l);
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .info-box .value {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--brown);
+    }
+
+    /* Image placeholder */
+    .img-ph {
+      border: 2px dashed var(--tan-d);
+      border-radius: 14px;
+      padding: 36px 20px;
+      text-align: center;
+      color: var(--text-soft);
+      font-size: 13px;
+      margin-top: 18px;
+      background: var(--tan);
+      opacity: 0.7;
+    }
+
+    /* Controls */
+    .ctrl-list { list-style: none; margin-top: 12px; }
+    .ctrl-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 12px 0;
+      border-bottom: 1px dashed var(--tan-d);
+      color: var(--text-soft);
+      font-size: 14px;
+    }
+    .ctrl-list li:last-child { border-bottom: none; }
+    .key-badge {
+      background: var(--brown);
+      color: var(--cream);
+      border-radius: 8px;
+      padding: 4px 12px;
+      font-family: monospace;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* Variables table */
+    .var-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
+    .var-table th {
+      text-align: left;
+      color: var(--brown-l);
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-weight: 800;
+      padding: 8px 12px;
+      border-bottom: 2px solid var(--tan-d);
+    }
+    .var-table td {
+      padding: 10px 12px;
+      color: var(--text-soft);
+      border-bottom: 1px dashed var(--tan-d);
+    }
+    .var-table td:first-child {
+      font-family: monospace;
+      font-weight: 700;
+      color: var(--brown);
+    }
+    .var-table tr:last-child td { border-bottom: none; }
+
+    /* Rules */
+    .rule-list { list-style: none; margin-top: 14px; }
+    .rule-list li {
+      background: var(--tan);
+      border-left: 4px solid var(--mustard-d);
+      border-radius: 0 10px 10px 0;
+      padding: 10px 16px;
+      margin-bottom: 8px;
+      color: var(--text-soft);
+      font-size: 14px;
+    }
+    .if-w  { color: var(--red);    font-weight: 800; }
+    .then-w{ color: var(--green);  font-weight: 800; }
+
+    /* Loop steps */
+    .loop-steps { list-style: none; counter-reset: step; margin-top: 14px; }
+    .loop-steps li {
+      counter-increment: step;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 12px 0;
+      border-bottom: 1px dashed var(--tan-d);
+      color: var(--text-soft);
+      font-size: 14px;
+    }
+    .loop-steps li:last-child { border-bottom: none; }
+    .loop-steps li::before {
+      content: counter(step);
+      background: var(--mustard);
+      color: var(--brown);
+      font-weight: 800;
+      font-size: 12px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      border: 2px solid var(--mustard-d);
+    }
+
+    /* Playtesting */
+    .change-block {
+      background: var(--tan);
+      border: 1px solid var(--tan-d);
+      border-radius: 12px;
+      padding: 18px 22px;
+      margin-bottom: 14px;
+    }
+    .prob-label {
+      font-size: 9px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: var(--red);
+      margin-bottom: 6px;
+    }
+    .fix-label {
+      font-size: 9px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: var(--green);
+      margin-top: 14px;
+      margin-bottom: 6px;
+    }
+    .change-block p { font-size: 14px; }
+
+    /* Flowchart */
+    .flowchart {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .flow-box {
+      background: var(--tan);
+      border: 2px solid var(--tan-d);
+      border-radius: 10px;
+      padding: 10px 24px;
+      text-align: center;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+      min-width: 200px;
+      max-width: 300px;
+    }
+    .flow-box.decision {
+      background: #fff3cd;
+      border-color: var(--mustard-d);
+      color: var(--brown);
+      font-weight: 700;
+    }
+    .flow-box.start-end {
+      background: var(--mustard);
+      border-color: var(--mustard-d);
+      color: var(--brown);
+      border-radius: 30px;
+      font-weight: 800;
+      font-family: 'Lilita One', cursive;
+    }
+    .flow-box.game-over {
+      background: #fde8e8;
+      border-color: var(--red);
+      color: var(--red);
+      border-radius: 30px;
+      font-weight: 800;
+      font-family: 'Lilita One', cursive;
+    }
+    .flow-arrow { color: var(--mustard-d); font-size: 22px; padding: 2px 0; }
+    .flow-branch { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; margin: 4px 0; }
+    .flow-branch-item { display: flex; flex-direction: column; align-items: center; }
+    .flow-branch-label { font-size: 10px; font-weight: 700; color: var(--brown-l); margin-bottom: 3px; }
+
+    /* Highlight callout */
+    .callout {
+      background: #fff8e1;
+      border: 2px solid var(--mustard);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 18px;
+      font-size: 14px;
+      color: var(--brown);
+      font-weight: 600;
+    }
+    .callout span { font-size: 18px; margin-right: 6px; }
+
+    footer {
+      text-align: center;
+      padding: 28px;
+      color: var(--text-soft);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      border-top: 2px dashed var(--tan-d);
+    }
+
+    @media (max-width: 600px) {
+      .card { padding: 22px 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header>
+  <!-- background emoji decorations -->
+  <div class="bg-emoji">🌭</div>
+  <div class="bg-emoji">🐶</div>
+  <div class="bg-emoji">🌭</div>
+  <div class="bg-emoji">🐾</div>
+  <div class="bg-emoji">🌭</div>
+  <div class="bg-emoji">⭐</div>
+
+  <div class="genre-badge">🎮 Digital Game — GDD</div>
+
+  <h1>Chase the Sausage!</h1>
+
+  <span class="dog-row">🐶💨&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;🌭</span>
+
+  <p class="header-subtitle">
+    Cameron Ramirez, Derrick Garcia &amp; Alysianna Nuncio &nbsp;·&nbsp; Period 2
+  </p>
+
+  <div class="meta-chips">
+    <div class="meta-chip"><strong>Platform</strong>Computer (Browser)</div>
+    <div class="meta-chip"><strong>Genre</strong>Action / Arcade</div>
+    <div class="meta-chip"><strong>Audience</strong>Ages 7+</div>
+    <div class="meta-chip"><strong>Engine</strong>HTML / JavaScript</div>
+    <div class="meta-chip"><strong>Players</strong>1 Player</div>
+  </div>
+</header>
+
+<!-- ===== NAV ===== -->
+<nav>
+  <a href="#overview">🐶 Overview</a>
+  <a href="#goal">🏆 Goal</a>
+  <a href="#controls">🕹️ Controls</a>
+  <a href="#mechanics">⚙️ Mechanics</a>
+  <a href="#loop">🔄 Loop</a>
+  <a href="#playtesting">🧪 Playtesting</a>
+  <a href="#flowchart">📊 Flowchart</a>
+  <a href="#reflection">💭 Reflection</a>
+</nav>
+
+<main>
+
+  <!-- 01 OVERVIEW -->
+  <section class="card" id="overview" data-emoji="🌭">
+    <h2><span class="sec-num">01</span> Game Overview</h2>
+    <p>
+      <strong>Chase the Sausage!</strong> is a single-player 2D arcade game where you control a hungry dachshund racing around a grid to collect as many sausages as possible. The more you eat, the longer your dog grows — just like Snake — but cuter and meatier.
+    </p>
+    <p>
+      The game gets progressively harder as your dog grows longer and the grid fills up with your tail. One wrong turn into a wall or yourself and it's game over. How many sausages can YOU eat before it all goes wrong?
+    </p>
+
+    <div class="info-grid">
+      <div class="info-box"><div class="label">Game Type</div><div class="value">2D Arcade / Browser</div></div>
+      <div class="info-box"><div class="label">Platform</div><div class="value">Computer (HTML)</div></div>
+      <div class="info-box"><div class="label">Audience</div><div class="value">Ages 7 and up</div></div>
+      <div class="info-box"><div class="label">Players</div><div class="value">Single Player</div></div>
+      <div class="info-box"><div class="label">Session Length</div><div class="value">1–5 minutes</div></div>
+      <div class="info-box"><div class="label">Engine / Tools</div><div class="value">HTML + JavaScript</div></div>
+    </div>
+
+    <div class="img-ph">🐾 Add a screenshot or concept art here!<br><br>
+      <code style="font-size:11px; color:var(--brown-l);">&lt;img src="screenshot.png" alt="Chase the Sausage gameplay" class="game-image"&gt;</code>
+    </div>
+  </section>
+
+  <!-- 02 GOAL -->
+  <section class="card" id="goal" data-emoji="🏆">
+    <h2><span class="sec-num">02</span> Game Goal</h2>
+    <p>
+      Your dog is <em>very</em> hungry. Guide it around the screen to eat every sausage you can find. Each sausage you eat makes your dog one segment longer. The real challenge is steering your long dachshund body without crashing — because one wrong move ends the run!
+    </p>
+    <div class="callout"><span>🎯</span> Grow your dachshund until it fills the whole screen to achieve the ultimate win!</div>
+    <div class="info-grid">
+      <div class="info-box">
+        <div class="label">✅ Win Condition</div>
+        <div class="value">Grow long enough to fill the screen</div>
+      </div>
+      <div class="info-box">
+        <div class="label">❌ Lose Condition</div>
+        <div class="value">Run into a wall or your own tail</div>
+      </div>
+      <div class="info-box">
+        <div class="label">🌭 Points</div>
+        <div class="value">+1 point per sausage collected</div>
+      </div>
+      <div class="info-box">
+        <div class="label">💀 Lives</div>
+        <div class="value">1 — no second chances!</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 CONTROLS -->
+  <section class="card" id="controls" data-emoji="🕹️">
+    <h2><span class="sec-num">03</span> Player Controls</h2>
+    <p>All controls use the keyboard arrow keys. The dog keeps moving automatically — you just steer!</p>
+    <ul class="ctrl-list">
+      <li><span class="key-badge">↑ Up Arrow</span> Turn the dog upward — moves toward the top of the screen</li>
+      <li><span class="key-badge">↓ Down Arrow</span> Turn the dog downward — moves toward the bottom of the screen</li>
+      <li><span class="key-badge">← Left Arrow</span> Turn the dog left — moves toward the left side of the screen</li>
+      <li><span class="key-badge">→ Right Arrow</span> Turn the dog right — moves toward the right side of the screen</li>
+      <li><span class="key-badge">Space</span> Pause / Unpause the game</li>
+      <li><span class="key-badge">R</span> Restart the game after a Game Over</li>
+    </ul>
+    <p style="margin-top:14px; font-size:13px; color:var(--brown-l);">⚠️ Note: You cannot reverse directly — the dog can't turn 180° in one move (e.g. going right then immediately left). Plan ahead!</p>
+  </section>
+
+  <!-- 04 MECHANICS -->
+  <section class="card" id="mechanics" data-emoji="⚙️">
+    <h2><span class="sec-num">04</span> Game Mechanics &amp; Logic</h2>
+
+    <p><strong>Main Actions a player can take:</strong></p>
+    <ul style="color:var(--text-soft); margin: 8px 0 20px 22px; line-height:2.2; font-size:14px;">
+      <li>Steer the dog using arrow keys</li>
+      <li>Collect sausages to earn points and grow the dog</li>
+      <li>Avoid walls and the dog's own tail</li>
+      <li>Pause strategically to plan a tricky route</li>
+    </ul>
+
+    <p><strong>Game Variables:</strong></p>
+    <table class="var-table">
+      <thead>
+        <tr>
+          <th>Variable</th>
+          <th>Starting Value</th>
+          <th>What It Tracks</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>score</td>
+          <td>0</td>
+          <td>Total sausages collected — goes up by 1 each time</td>
+        </tr>
+        <tr>
+          <td>dogLength</td>
+          <td>3 segments</td>
+          <td>How many body pieces the dog has — grows with each sausage</td>
+        </tr>
+        <tr>
+          <td>speed</td>
+          <td>1 tile/tick</td>
+          <td>How fast the dog moves — can increase as score gets higher</td>
+        </tr>
+        <tr>
+          <td>health</td>
+          <td>1</td>
+          <td>One life only — hitting anything ends the game</td>
+        </tr>
+        <tr>
+          <td>isAlive</td>
+          <td>true</td>
+          <td>Set to false when the dog crashes — triggers Game Over screen</td>
+        </tr>
+        <tr>
+          <td>sausagePosition</td>
+          <td>random</td>
+          <td>Where the next sausage spawns — always in an empty cell</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p style="margin-top: 26px; margin-bottom: 10px;"><strong>If / Then Rules (Game Logic):</strong></p>
+    <ul class="rule-list">
+      <li><span class="if-w">IF</span> the player presses an arrow key → <span class="then-w">THEN</span> change the dog's direction</li>
+      <li><span class="if-w">IF</span> the dog's head touches a sausage → <span class="then-w">THEN</span> score +1, dog grows by 1 segment, spawn new sausage</li>
+      <li><span class="if-w">IF</span> the dog's head hits a wall → <span class="then-w">THEN</span> isAlive = false, show Game Over screen</li>
+      <li><span class="if-w">IF</span> the dog's head hits its own tail → <span class="then-w">THEN</span> isAlive = false, show Game Over screen</li>
+      <li><span class="if-w">IF</span> score reaches the winning threshold → <span class="then-w">THEN</span> show You Win! screen</li>
+      <li><span class="if-w">IF</span> player presses Space → <span class="then-w">THEN</span> toggle pause (freeze all movement)</li>
+    </ul>
+  </section>
+
+  <!-- 05 LOOP -->
+  <section class="card" id="loop" data-emoji="🔄">
+    <h2><span class="sec-num">05</span> Game Loop</h2>
+    <p>Every game "tick" (a fraction of a second), these steps run in order — over and over until the game ends:</p>
+    <ol class="loop-steps">
+      <li>Read player input — did they press an arrow key or Space?</li>
+      <li>Update the dog's direction if a valid key was pressed</li>
+      <li>Move the dog one tile forward in the current direction</li>
+      <li>Check if the dog's head hit a wall → Game Over if yes</li>
+      <li>Check if the dog's head hit its own body → Game Over if yes</li>
+      <li>Check if the dog's head is on the sausage → collect it, grow, spawn new sausage</li>
+      <li>Update and display the score on screen</li>
+      <li>Check if the win condition is met → show victory screen</li>
+      <li>If no win or lose, wait for next tick and repeat</li>
+    </ol>
+  </section>
+
+  <!-- 06 PLAYTESTING -->
+  <section class="card" id="playtesting" data-emoji="🧪">
+    <h2><span class="sec-num">06</span> Playtesting &amp; Changes</h2>
+    <p>After letting real players try the game, we found these problems and made fixes:</p>
+
+    <div class="change-block">
+      <div class="prob-label">⚠️ Problem Found</div>
+      <p>Players said the game was too easy — they could keep going forever without any challenge.</p>
+      <div class="fix-label">✅ Changes Made</div>
+      <p>Added more wall obstacles in the middle of the grid. Also increased the dog's movement speed as the score got higher, making long runs harder to control.</p>
+    </div>
+
+    <div class="change-block">
+      <div class="prob-label">⚠️ Problem Found</div>
+      <p>Some players accidentally reversed their direction and instantly hit their own tail right at the start.</p>
+      <div class="fix-label">✅ Changes Made</div>
+      <p>Added a rule that prevents the dog from turning 180° in a single move. You can't go from moving right to immediately moving left — the input is ignored and you continue in your current direction.</p>
+    </div>
+
+    <div class="change-block">
+      <div class="prob-label">⚠️ Problem Found</div>
+      <p>Players didn't know they had lost — the game just froze without any feedback.</p>
+      <div class="fix-label">✅ Changes Made</div>
+      <p>Added a clear "Game Over" overlay showing the player's final score and a message to press R to restart.</p>
+    </div>
+  </section>
+
+  <!-- 07 FLOWCHART -->
+  <section class="card" id="flowchart" data-emoji="📊">
+    <h2><span class="sec-num">07</span> Logic Flowchart</h2>
+    <p>This diagram shows exactly how the game logic flows from when you press Start to when the game ends:</p>
+
+    <div class="flowchart">
+
+      <div class="flow-box start-end">🐶 Start Game</div>
+      <div class="flow-arrow">↓</div>
+
+      <div class="flow-box">Set score = 0, dogLength = 3, speed = 1<br>Spawn sausage at random position</div>
+      <div class="flow-arrow">↓</div>
+
+      <div class="flow-box decision">Did player press an arrow key?</div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-branch">
+        <div class="flow-branch-item">
+          <div class="flow-branch-label">YES (valid direction)</div>
+          <div class="flow-box">Update dog direction</div>
+        </div>
+        <div class="flow-branch-item">
+          <div class="flow-branch-label">NO / invalid</div>
+          <div class="flow-box">Keep current direction</div>
+        </div>
+      </div>
+      <div class="flow-arrow">↓</div>
+
+      <div class="flow-box">Move dog one tile forward</div>
+      <div class="flow-arrow">↓</div>
+
+      <div class="flow-box decision">Did dog hit a wall or its tail?</div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-branch">
+        <div class="flow-branch-item">
+          <div class="flow-branch-label">YES</div>
+          <div class="flow-box game-over">💀 Game Over!</div>
+        </div>
+        <div class="flow-branch-item">
+          <div class="flow-branch-label">NO</div>
+          <div class="flow-box">Continue</div>
+        </div>
+      </div>
+      <div class="flow-arrow">↓</div>
+
+      <div class="flow-box decision">Did dog head land on a sausage?</div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-branch">
+        <div class="flow-branch-item">
+          <div class="flow-branch-label">YES 🌭</div>
+          <div class="flow-box">score + 1<br>dogLength + 1<br>Spawn new sausage</div>
+        </div>
+        <div class="flow-branch-item">
+          <div class="flow-branch-label">NO</div>
+          <div class="flow-box">Nothing happens</div>
+        </div>
+      </div>
+      <div class="flow-arrow">↓</div>
+
+      <div class="flow-box decision">Did player reach win score?</div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-branch">
+        <div class="flow-branch-item">
+          <div class="flow-branch-label">YES 🏆</div>
+          <div class="flow-box start-end">🌭 You Win!</div>
+        </div>
+        <div class="flow-branch-item">
+          <div class="flow-branch-label">NO</div>
+          <div class="flow-box">Loop back ↑<br>(next tick)</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 08 REFLECTION -->
+  <section class="card" id="reflection" data-emoji="💭">
+    <h2><span class="sec-num">08</span> Designer Reflection</h2>
+
+    <p>
+      The hardest part of this project was making the game <strong>feel fun</strong>. It's easy to make a game that works, but we wanted players to actually enjoy it. We spent a lot of time tweaking how fast the dog moves and how quickly the speed increases — getting that balance right took many playtests.
+    </p>
+
+    <p>
+      We also struggled with collision detection at first. The code wasn't correctly checking if the dog's head overlapped its own tail, so players could phase through themselves. Fixing that bug taught us a lot about how loops and coordinate comparisons work in JavaScript.
+    </p>
+
+    <p>
+      Our game uses core programming concepts — <strong>variables</strong> (score, speed, length), <strong>if statements</strong> (collision checks, win/lose conditions), and <strong>loops</strong> (the game tick that runs every frame). Seeing these concepts come together to make something actually playable was the most rewarding part.
+    </p>
+
+    <p>
+      If we had more time, we would add: a high score leaderboard, different obstacle types, a second sausage that appears randomly for bonus points, and sound effects when you eat or crash.
+    </p>
+  </section>
+
+</main>
+
+<footer>
+  <p>🐾 Created by Cameron Ramirez, Derrick Garcia &amp; Alysianna Nuncio &nbsp;·&nbsp; Game Design &amp; Programming &nbsp;·&nbsp; 2026 &nbsp;·&nbsp; 🌭 Chase the Sausage!</p>
+</footer>
+
+<script>
+  // Scroll-in animation for cards
+  const cards = document.querySelectorAll('.card');
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) e.target.classList.add('visible');
+    });
+  }, { threshold: 0.08 });
+  cards.forEach(c => obs.observe(c));
+</script>
+
+</body>
+</html>
